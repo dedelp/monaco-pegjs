@@ -32,49 +32,92 @@ export default class App extends React.Component {
 		this.editorDidMount = this.editorDidMount.bind(this)
 		this.editorWillMount = this.editorWillMount.bind(this)
 		this.tryParse = this.tryParse.bind(this)
+		this.resetCompletions = this.resetCompletions.bind(this)
 	}
 	editorWillMount(monaco) {
+		this.monaco = monaco
 		monaco.languages.register({ id: 'RVD-Equation' });
 		monaco.languages.registerCompletionItemProvider('RVD-Equation', {
 			provideCompletionItems: () => {
 				console.log("provideCompletionItems")
 				return [
 					{
-						label: '{(row.amount)}',
-						kind: monaco.languages.CompletionItemKind.Keyword,
+						label: 'row.amount',
+						kind: monaco.languages.CompletionItemKind.Snippet,
 						insertText: {
-							value: '{(row.amount${1:,options} ${2:|| default})'
+							value: '{(row.amount${1:,options} ${2:|| default})}'
 						}
 					},
 
 				]
 			}
 		});
-		monaco.languages.setMonarchTokensProvider('RVD-Equation', {
-			tokenizer: {
-				root: [
-					[/\{\(.*\)\}/, "variable"],
+		
+		/*monaco.languages.setTokensProvider('RVD-Equation',{
+			getInitialState: () => {
+				console.log('Get Token Initial State')
+				return {
+					clone:() => {},
+					equals:() => true
+				}
+			},
+			tokenize: (line,state) => {
+				console.log('tokenize',line,state)
+				return {
+					tokens:[],
+					endState: {
+						clone:() => {},
+						equals:() => true
+					}
+				}
+			}
+		})*/
+
+		
+	}
+	resetCompletions() {
+		const {monaco} = this
+		monaco.languages.registerCompletionItemProvider('RVD-Equation', {
+			provideCompletionItems: () => {
+				console.log("provideCompletionItems")
+				return [
+					{
+						label: 'row.total',
+						kind: monaco.languages.CompletionItemKind.Snippet,
+						insertText: {
+							value: '{(row.total${1:,options} ${2:|| default})}'
+						}
+					},
+
 				]
 			}
 		});
-		monaco.editor.defineTheme('RVD-Theme', {
-			base: 'vs',
-			inherit: false,
-			rules: [
-				{ token: 'variable', foreground: '0000FF' },
-			]
-		});
-		
 	}
 	editorDidMount(editor,monaco)
 	{
 		//this.tryParse(editor.value);	
+		this.editor = editor
+		this.monaco = monaco
 	}
 	tryParse(val) {
+		const {model,editor} = this
 		try {
 			var res = ParserService.parseEquation(val)
+			monaco.editor.setModelMarkers(editor.getModel(),'RVD-Equation',[])
 			console.log(res)
 		} catch(e) {
+			var startLineNumber = e.location.start.line,
+			startColumn = e.location.start.column,
+			endLineNumber = e.location.end.line,
+			endColumn = e.location.end.column
+			monaco.editor.setModelMarkers(editor.getModel(),'RVD-Equation',[{
+				severity: monaco.Severity.Error,
+				startLineNumber,
+				startColumn,
+				endLineNumber,
+				endColumn,
+				message: e.name + ":" +e.message
+			}])
 			console.log(e)
 		}
 	}
@@ -85,18 +128,21 @@ export default class App extends React.Component {
 		
 		var code= "round( {(row.Amount)} , 2)"
 		return (
-			<MonacoEditor
-				width="800"
-				height="600"
-				theme= 'myCoolTheme'
-				value={code}
-				language="RVD-Equation"
-				theme="RVD-Theme"
-				onChange = {this.onChange}
-				requireConfig={requireConfig}
-				editorDidMount={this.editorDidMount}
-				editorWillMount={this.editorWillMount}
-			/>
+			<div>
+				<MonacoEditor
+					width="800"
+					height="600"
+					theme= 'myCoolTheme'
+					value={code}
+					language="RVD-Equation"
+					theme="RVD-Theme"
+					onChange = {this.onChange}
+					requireConfig={requireConfig}
+					editorDidMount={this.editorDidMount}
+					editorWillMount={this.editorWillMount}
+				/>
+				<button onClick={this.resetCompletions} >Change completions</button>
+			</div>
 		)
 	}
 }

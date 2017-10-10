@@ -30,9 +30,11 @@
     "webpack-node-externals": "^1.6.0"
   },
   "dependencies": {
+    "pegjs": "^0.10.0",
     "react": "^15.6.1",
     "react-dom": "^15.6.1",
     "react-hot-loader": "^3.0.0-beta.7",
-    "react-json-tree": "^0.10.9"
+    "react-json-tree": "^0.10.9",
+    "react-monaco-editor": "^0.10.1"
   }
 }
