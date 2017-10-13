@@ -4,16 +4,18 @@ Expression
 			return tail.reduce(function(result, element) {
 				if (element[1] === "+") { 
 					return {
-							location:location(),
-					function:'ADD',
-								params:[result,element[3]]
+						location:location(),
+						type:"Function",
+						name:'ADD',
+						params:[result,element[3]]
 					}; 
 				}
 				if (element[1] === "-") { 
 					return {
-							location:location(),
-					function:'SUB',
-								params:[result,element[3]]
+						location:location(),
+						type:"Function",
+						name:'SUB',
+						params:[result,element[3]]
 					}; 
 				}
 			}, head);
@@ -24,16 +26,18 @@ Term
 			return tail.reduce(function(result, element) {
 				if (element[1] === "*") { 
 					return {
-							location:location(),
-					function:'MULTIPLY',
-								params:[result,element[3]]
+						location:location(),
+						type:"Function",
+						name:'MULTIPLY',
+						params:[result,element[3]]
 					}; 
 				}
 				if (element[1] === "/") { 
 					return {
-							location:location(),
-					function:'DIVIDE',
-								params:[result,element[3]]
+						location:location(),
+						type:"Function",
+						name:'DIVIDE',
+						params:[result,element[3]]
 					}; 
 				}
 			}, head);
@@ -41,7 +45,7 @@ Term
 
 Factor
 	= "(" _ expr:Expression _ ")" { return expr; }
-	/ Integer
+	/ Number
 	/ Function
 	/ Variable
 	/ String
@@ -56,19 +60,28 @@ ValidStringChar
 		return c;
 	}
 
-Integer "integer"
-	= _ [0-9]+ { return parseInt(text(), 10); }
+Number "number"
+	= _ "-"? [0-9]+ ("\."[0-9]+)? { return {
+		location:location(),
+		type:"Number",
+		value:parseFloat(text())
+	}}
 
 Variable
-	= "{(" _ variableExpr:VariableExpr _ ")}" {
-	return variableExpr
-}
+	= _ variableName:VariableName _ {
+		return { 
+			location:location(),
+			type:"Variable",
+			name:variableName.join("")
+		} 
+	}
+	/ _ "{(" _ variableExpr:VariableExpr _ ")}" _ { return Object.assign({},{location:location()},variableExpr) }
 
 VariableExpr
 	= variableName:VariableName _ variableParams:VariableParams? _ variableDefault:VariableDefault?	{
 	return {
-		location:location(),
-		variable:variableName.join(""),
+		type:"Variable",
+		name:variableName.join(""),
 		default:variableDefault,
 		params:variableParams
 	}
@@ -99,9 +112,7 @@ VariableName
 	= [a-z0-9_\.]i+
 
 FunctionName
-	= !"(" !")" c:. {
-		return c;
-	}
+	= [a-z0-9_\.]i+
 	
 FunctionParam
 	= p:Expression _ ps:ParamRest* {
@@ -113,11 +124,12 @@ ParamRest
 }
 
 Function
-	= str:FunctionName+ _ "(" _ params:FunctionParam? _ ")" _ {
+	= str:FunctionName _ "(" _ params:FunctionParam? _ ")" _ {
 	return {
 			location:location(),
-			function:str.join(""),
-				params
+			type:"Function",
+			name:str.join(""),
+			params
 		}
 }
 
